@@ -3,10 +3,21 @@ set(CMAKE_CXX_STANDARD 11)
 
 project(bedrock_rga_test)
 
-include_directories(inc)
+set(SCHARE_INCLUDE  ${CMAKE_CURRENT_LIST_DIR}/librga/include
+                    ${CMAKE_CURRENT_LIST_DIR}/librga/im2d_api
+                    ${CMAKE_CURRENT_LIST_DIR}/include
+)
 
-set(SOURCES main.c)
+include_directories(${SCHARE_INCLUDE})
+
+set(SOURCES main.cpp
+            src/rga_test.cpp
+)
+set(SCHARE_LIBS
+    rga
+)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
+target_link_libraries(${PROJECT_NAME} ${SCHARE_LIBS})
 
-install(TARGETS bedrock_rga_test DESTINATION bin)
+install(TARGETS ${PROJECT_NAME} DESTINATION bin)
