@@ -2,7 +2,7 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 17:19:30
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-08 16:06:23
+ * @LastEditTime: 2022-08-08 16:42:29
  * @Description: 
  */
 #ifndef __RGA_USING_INTERFACE_H__
@@ -24,9 +24,6 @@
 #include "im2d.hpp"
 #include "im2d.h"
 
-#include "png.h"
-#include "pngconf.h"
-#include "pnglibconf.h"
 
 
 

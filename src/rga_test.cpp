@@ -2,7 +2,7 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 17:31:06
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-08 16:11:41
+ * @LastEditTime: 2022-08-08 16:22:40
  * @Description: 
  */
 #include "rga_using_interface.h"
@@ -156,7 +156,8 @@ int rga_resize_test(struct image_param *p_src, struct image_param *p_dst)
     // }
     if (dst_buf != NULL) {
         output_bufs_data_to_file(OUTPUT_FILE ,dst_buf, dst.format, dst.wstride, dst.hstride);
-        free(dst_buf);
+        p_dst->img_data = dst_buf;
+        //free(dst_buf);
         dst_buf = NULL;
     }
     

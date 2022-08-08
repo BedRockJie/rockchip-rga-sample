@@ -3,8 +3,8 @@ set(CMAKE_CXX_STANDARD 11)
 
 project(bedrock_rga_test)
 
-set(SCHARE_INCLUDE  ${CMAKE_CURRENT_LIST_DIR}/librga/include
-                    ${CMAKE_CURRENT_LIST_DIR}/librga/im2d_api
+set(SCHARE_INCLUDE  ${CMAKE_CURRENT_LIST_DIR}/lib/librga/include
+                    ${CMAKE_CURRENT_LIST_DIR}/lib/librga/im2d_api
                     ${CMAKE_CURRENT_LIST_DIR}/include
                     ${CMAKE_CURRENT_LIST_DIR}/lib/libstb/include
 
@@ -14,6 +14,7 @@ include_directories(${SCHARE_INCLUDE})
 
 set(SOURCES main.cpp
             src/rga_test.cpp
+            src/argparse.cpp
 )
 set(SCHARE_LIBS
     rga
