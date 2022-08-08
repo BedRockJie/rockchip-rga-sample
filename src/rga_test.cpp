@@ -2,7 +2,7 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 17:31:06
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-08 16:22:40
+ * @LastEditTime: 2022-08-08 18:16:26
  * @Description: 
  */
 #include "rga_using_interface.h"
@@ -88,7 +88,7 @@ int read_image_from_file(char *file_patch, struct image_param *p_src)
     case 4:
         p_src->width = iw;
         p_src->heigth = ih;
-        p_src->fmt = RK_FORMAT_BGRA_8888;
+        p_src->fmt = RK_FORMAT_RGBA_8888;
         //output_bufs_data_to_file("outtest.bin", idata, RK_FORMAT_BGRA_8888, iw, ih);
         break;
     default:
