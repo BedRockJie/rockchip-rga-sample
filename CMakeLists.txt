@@ -6,6 +6,8 @@ project(bedrock_rga_test)
 set(SCHARE_INCLUDE  ${CMAKE_CURRENT_LIST_DIR}/librga/include
                     ${CMAKE_CURRENT_LIST_DIR}/librga/im2d_api
                     ${CMAKE_CURRENT_LIST_DIR}/include
+                    ${CMAKE_CURRENT_LIST_DIR}/lib/libstb/include
+
 )
 
 include_directories(${SCHARE_INCLUDE})

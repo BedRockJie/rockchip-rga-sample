@@ -2,7 +2,7 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 17:19:30
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-05 18:07:01
+ * @LastEditTime: 2022-08-08 16:06:23
  * @Description: 
  */
 #ifndef __RGA_USING_INTERFACE_H__
@@ -24,8 +24,22 @@
 #include "im2d.hpp"
 #include "im2d.h"
 
+#include "png.h"
+#include "pngconf.h"
+#include "pnglibconf.h"
+
+
+
 #define ERROR               -1
 
 
-int rga_resize_test(char *filepatch, struct image_param *p_src, struct image_param *p_dst);
+struct image_param{
+    int width;
+    int heigth;
+    RgaSURF_FORMAT fmt;
+    unsigned char *img_data;
+};
+int read_image_from_file(char *file_patch, struct image_param *p_src);
+int release_image_file_buf(struct image_param *p_src);
+int rga_resize_test(struct image_param *p_src, struct image_param *p_dst);
 #endif // RGA_USING_INTERFACE_H
