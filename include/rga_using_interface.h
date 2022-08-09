@@ -39,4 +39,5 @@ struct image_param{
 int read_image_from_file(char *file_patch, struct image_param *p_src);
 int release_image_file_buf(struct image_param *p_src);
 int rga_resize_test(struct image_param *p_src, struct image_param *p_dst);
+int rga_crop_test(struct image_param *p_src, struct image_param *p_dst, im_rect src_rect);
 #endif // RGA_USING_INTERFACE_H

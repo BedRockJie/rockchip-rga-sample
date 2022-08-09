@@ -2,7 +2,7 @@
 
 set(OpenCV_DIR ${CMAKE_SOURCE_DIR}/../lib/opencv/share/OpenCV/)
 
-
+# 这里的大小写也很讲究
 find_package(OpenCV REQUIRED)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
