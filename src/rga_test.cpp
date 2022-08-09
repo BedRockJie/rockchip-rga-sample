@@ -2,16 +2,18 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 17:31:06
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-09 10:08:14
+ * @LastEditTime: 2022-08-09 18:24:56
  * @Description: 
  */
 #include "rga_using_interface.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize.h"
+
 
 #define OUTPUT_FILE "/root/out1.bin"
-
 struct timeval start, end;
 long usec1;
 
@@ -125,7 +127,7 @@ int read_image_from_file(char *file_patch, struct image_param *p_src)
  */
 int rga_resize_test(struct image_param *p_src, struct image_param *p_dst)
 {
-    int ret;
+    int ret, pix_fmt;
     im_rect 		src_rect;
     im_rect 		dst_rect;
     //接口返回值
@@ -142,10 +144,31 @@ int rga_resize_test(struct image_param *p_src, struct image_param *p_dst)
 	memset(&dst, 0, sizeof(dst));
 
     src_buf = p_src->img_data;
-    //src_buf = (char*)malloc(p_src->width*p_src->heigth*get_bpp_from_format(p_src->fmt));
-    dst_buf = (unsigned char*)malloc(p_dst->width*p_dst->heigth*get_bpp_from_format(p_dst->fmt));
+    //超过走软件缩放  sample 使用stb缩放，弊端：只支持RGB和灰度格式。
+    if(p_dst->width > 4096 || p_dst->heigth > 4096) {
+        if(p_dst->fmt == RK_FORMAT_RGB_888) {
+            pix_fmt = 3;
+            dst_buf = (unsigned char*)malloc(p_dst->width*p_dst->heigth*pix_fmt);
+        } else if(p_dst->fmt == RK_FORMAT_RGBA_8888) {
+            pix_fmt = 4;
+            dst_buf = (unsigned char*)malloc(p_dst->width*p_dst->heigth*pix_fmt);
+        }
+        
+        gettimeofday(&start, NULL);
+        stbir_resize(src_buf, p_src->width, p_src->heigth, 0, dst_buf, p_dst->width, p_dst->heigth, 0,
+        STBIR_TYPE_UINT8, pix_fmt, STBIR_ALPHA_CHANNEL_NONE, 0, STBIR_EDGE_CLAMP, STBIR_EDGE_CLAMP,
+        STBIR_FILTER_BOX, STBIR_FILTER_BOX, STBIR_COLORSPACE_SRGB, NULL);
+        gettimeofday(&end, NULL);
 
-    //ret = get_bufs_from_file(filepatch, src_buf, p_src->fmt, p_src->width, p_src->heigth);
+        usec1 = 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+        printf("resizing .... cost time %ld us, %s\n", usec1, imStrError(STATUS));
+        dst.format = 0;
+        dst.wstride = 8192;
+        dst.hstride = 8192;
+        goto RESIZE_END;
+    }
+    dst_buf = (unsigned char*)malloc(p_dst->width*p_dst->heigth*get_bpp_from_format(p_dst->fmt));
+    
 
     memset(dst_buf,0x00,p_dst->width*p_dst->heigth*get_bpp_from_format(p_dst->fmt));
 
@@ -176,8 +199,10 @@ int rga_resize_test(struct image_param *p_src, struct image_param *p_dst)
     //     free(src_buf);
     //     src_buf = NULL;
     // }
+RESIZE_END:
     if (dst_buf != NULL) {
         output_bufs_data_to_file(OUTPUT_FILE ,dst_buf, dst.format, dst.wstride, dst.hstride);
+        printf("%d %d %d\n", dst.format, dst.wstride, dst.hstride);
         p_dst->img_data = dst_buf;
         //free(dst_buf);
         dst_buf = NULL;

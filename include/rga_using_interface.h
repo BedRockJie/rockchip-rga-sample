@@ -2,7 +2,7 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 17:19:30
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-08 16:42:29
+ * @LastEditTime: 2022-08-09 20:25:40
  * @Description: 
  */
 #ifndef __RGA_USING_INTERFACE_H__
@@ -17,14 +17,15 @@
 #include <memory.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <iostream>
 
 #include "rga.h"
 #include "RockchipRga.h"
 #include "RgaUtils.h"
 #include "im2d.hpp"
 #include "im2d.h"
-
-
+#include "opencv2/opencv.hpp"
+#include "opencv2/imgproc.hpp"
 
 
 #define ERROR               -1
