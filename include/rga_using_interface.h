@@ -2,7 +2,7 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 17:19:30
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-09 20:25:40
+ * @LastEditTime: 2022-08-10 09:12:27
  * @Description: 
  */
 #ifndef __RGA_USING_INTERFACE_H__
@@ -41,4 +41,7 @@ int read_image_from_file(char *file_patch, struct image_param *p_src);
 int release_image_file_buf(struct image_param *p_src);
 int rga_resize_test(struct image_param *p_src, struct image_param *p_dst);
 int rga_crop_test(struct image_param *p_src, struct image_param *p_dst, im_rect src_rect);
+
+void cvtcolor_rgb2yuv422(cv::Mat& rgb, cv::Mat& yuv);
+int rgb2yuv422(cv::Mat& img, struct image_param *yuv422);
 #endif // RGA_USING_INTERFACE_H

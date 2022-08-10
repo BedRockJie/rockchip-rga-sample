@@ -2,7 +2,7 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 17:31:06
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-09 18:24:56
+ * @LastEditTime: 2022-08-10 09:27:15
  * @Description: 
  */
 #include "rga_using_interface.h"
@@ -266,4 +266,90 @@ int rga_crop_test(struct image_param *p_src, struct image_param *p_dst, im_rect 
         dst_buf = NULL;
     }
     return 0;
+}
+
+void cvtcolor_rgb2yuv422(cv::Mat& rgb, cv::Mat& yuv) {
+	cv::Mat yuv444(rgb.rows, rgb.cols, CV_8UC3);
+	cv::cvtColor(rgb, yuv444, CV_BGR2YUV);
+    // chroma subsampling: yuv444 -> yuv422;
+    for (int row = 0; row < yuv444.rows; row++) {
+        for (int col = 0; col < yuv444.cols; col+=2) {
+        	cv::Vec3b p0_in = yuv444.at<cv::Vec3b>(row, col);
+        	cv::Vec3b p1_in = yuv444.at<cv::Vec3b>(row, col+1);
+        	cv::Vec2b p0_out, p1_out;
+            p0_out.val[0] = p0_in.val[0];
+            p0_out.val[1] = p0_in.val[1];
+            p1_out.val[0] = p1_in.val[0];
+            p1_out.val[1] = p0_in.val[2];
+            yuv.at<cv::Vec2b>(row, col) = p0_out;
+            yuv.at<cv::Vec2b>(row, col+1) = p1_out;
+        }
+    }
+}
+int rgb2yuv422(cv::Mat& img, struct image_param *yuv422) {
+
+
+
+	if (!img.data) {
+		std::cout << "Image reading unsuccessful! Exiting.." << std::endl;
+		return -1;
+	}
+	CV_Assert(img.depth() == CV_8U);
+
+	int nRows = img.rows;
+	int nCols = img.cols;
+	//int nChannels = img.channels();
+
+	int nPixels = nRows * nCols;
+	int buffsize;
+
+	if (nPixels % 2 == 0)
+		buffsize = 2 * nPixels;
+	else
+		buffsize = 2 * nPixels + 1;
+    
+    yuv422->width = img.cols;
+    yuv422->heigth = img.rows;
+	//yuv422->buf_size = buffsize;
+
+	unsigned char *t = yuv422->img_data;
+
+	float B1, G1, R1;
+	unsigned char  Y1, U1, V1;
+	unsigned char * p = img.data;
+
+	bool writeFull = true;
+
+	//This loop converts RGB image to YUV 4:2:2
+	for (unsigned int i = 0; i!= uint(nPixels); ++i) {
+		B1 = float(*p++);
+		G1 = float(*p++);
+		R1 = float(*p);
+
+		Y1 = uchar(round(0.257 * R1 + 0.504 * G1 + 0.098 * B1 + 16));
+		U1 = uchar(round(-0.148 * R1 - 0.291 * G1 + 0.439 * B1 + 128));
+		V1 = uchar(round(0.439 * R1 - 0.368 * G1 - 0.071 * B1 + 128));
+
+		if (writeFull) {
+			*t++ = U1;
+			*t++ = Y1;
+			*t = V1;
+		} else
+			*t = Y1;
+
+		writeFull = !writeFull;
+		if (i < uint(nPixels)-1){
+		t++;
+		p++;
+		}
+	}
+/*
+    uchar *buff_pointer = (uchar*)yuv422->buf;
+	cout << "(function) Writing YUV 4:2:2 image data: " << endl;
+	for (unsigned int i = 0; i!=uint(yuv422->buf_size); ++i){
+		cout << int(*buff_pointer) << endl;
+		buff_pointer++;
+	}
+*/
+	return 0;
 }

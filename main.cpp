@@ -2,7 +2,7 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 15:37:35
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-09 22:03:04
+ * @LastEditTime: 2022-08-10 09:35:31
  * @Description: 
  */
 #include <stdio.h>
@@ -47,7 +47,8 @@ int main(int argc, char const *argv[])
                                  "\nuse --help for details.");
     argc = argparse_parse(&argparse, argc, argv);
 
-    printf("%d %d %s\n", output_img_param.width, output_img_param.heigth, file_name);
+    printf("%d %d mode:%d pix:%d %s\n", output_img_param.width, output_img_param.heigth,
+                                        mode, pix_fmt, file_name);
     if(output_img_param.heigth < 2 || output_img_param.width < 2 ||
         file_name == NULL) {
         goto FAILD_OUT;
@@ -69,7 +70,6 @@ int main(int argc, char const *argv[])
                 input_img_param.fmt = RK_FORMAT_RGBA_8888;
 
             Size outsize = Size(output_img_param.width, output_img_param.heigth);
-            
             Mat output_img;
 
             gettimeofday(&start, NULL);
@@ -77,19 +77,29 @@ int main(int argc, char const *argv[])
             gettimeofday(&end, NULL);
             usec1 = 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
             printf("resizing .... cost time %ld us\n", usec1);
-            Mat yuvimg;
-            int buflen = output_img.cols * output_img.rows * pix_fmt;
-            long buflen1 = output_img_param.width * output_img_param.heigth * pix_fmt;
+            
+            int buflen = 0;
+            if(pix_fmt == 1)
+                buflen = output_img.cols * output_img.rows * 1.5;
+            else
+                buflen = output_img.cols * output_img.rows * pix_fmt;
             input_img_param.img_data = new unsigned char[buflen];
-
-
-            if(pix_fmt == 2) {
+            Mat yuvimg(output_img.rows, output_img.cols, CV_8UC2);
+            printf("resize done\n");
+            gettimeofday(&start, NULL);
+            if(pix_fmt == 1) {
                 cvtColor(output_img, yuvimg, COLOR_BGR2YUV_IYUV);
             } else if(pix_fmt == 3) {
                 cvtColor(output_img, yuvimg, COLOR_BGR2YUV);
+            } else if(pix_fmt == 2){
+                cvtcolor_rgb2yuv422(output_img, yuvimg);
+                //rgb2yuv422(output_img, &input_img_param);
             } else {
-                cvtColor(output_img, yuvimg, COLOR_BGR2YCrCb);
+                std::cout << "pix_fmt faild" << std::endl;
             }
+            gettimeofday(&end, NULL);
+            usec1 = 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+            printf("cvtcolor yuv422 .... cost time %ld us\n", usec1);
             FILE* pfile=fopen("img.yuv", "wb");
             memcpy(input_img_param.img_data, yuvimg.data, buflen * sizeof(unsigned char));
             fwrite(input_img_param.img_data, buflen * sizeof(unsigned char), 1, pfile);
