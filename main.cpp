@@ -2,7 +2,7 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 15:37:35
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-10 09:35:31
+ * @LastEditTime: 2022-08-11 09:09:40
  * @Description: 
  */
 #include <stdio.h>
@@ -13,7 +13,7 @@
 using namespace cv;
 
 static const char *const usages[] = {
-    "./bedrock_rga_test [-w 1920 -h 1080 -i [file_name]]...",
+    "./bedrock_rga_test -w 1920 -h 1080 -p 1 -m 1 -i [file_name]...",
     NULL,
 };
 
@@ -36,7 +36,7 @@ int main(int argc, char const *argv[])
         OPT_INTEGER('m', "mode", &(mode),
                     "image processing mode eg: 1(resize) 2(crop)", NULL, 0, 0),
         OPT_INTEGER('p', "pixsize", &(pix_fmt),
-                    "yuv pix size", NULL, 0, 0),
+                    "yuv pix size eg: 1(yuv420) 2(yuv422) 3(yuv444)", NULL, 0, 0),
         OPT_STRING('i', "file_name", &(file_name),
                    "file_name.png or xxxxx.jpg", NULL, 0, 0),
         OPT_END(),
@@ -99,7 +99,7 @@ int main(int argc, char const *argv[])
             }
             gettimeofday(&end, NULL);
             usec1 = 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
-            printf("cvtcolor yuv422 .... cost time %ld us\n", usec1);
+            printf("cvtcolor %d  .... cost time %ld us\n", pix_fmt, usec1);
             FILE* pfile=fopen("img.yuv", "wb");
             memcpy(input_img_param.img_data, yuvimg.data, buflen * sizeof(unsigned char));
             fwrite(input_img_param.img_data, buflen * sizeof(unsigned char), 1, pfile);
@@ -108,8 +108,13 @@ int main(int argc, char const *argv[])
 
         } else {
             read_image_from_file(file, &input_img_param);
-
-            output_img_param.fmt = RK_FORMAT_RGBA_8888;
+            if(pix_fmt == 1)
+                output_img_param.fmt = RK_FORMAT_UYVY_420;
+            else if(pix_fmt == 2)
+                output_img_param.fmt = RK_FORMAT_YUYV_422;
+            else if(pix_fmt == 3)
+                output_img_param.fmt = RK_FORMAT_YUYV_422;
+            /* RGA不支持输出 YUV444 图像格式  所以 pix_fmt为3时 输出  YUV422格式图像*/
             // output_img_param.width = 3840;
             // output_img_param.heigth = 2160;
             rga_resize_test(&input_img_param, &output_img_param);

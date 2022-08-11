@@ -2,7 +2,7 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 17:31:06
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-10 09:27:15
+ * @LastEditTime: 2022-08-11 15:54:27
  * @Description: 
  */
 #include "rga_using_interface.h"
@@ -267,24 +267,66 @@ int rga_crop_test(struct image_param *p_src, struct image_param *p_dst, im_rect 
     }
     return 0;
 }
-
+class Cvtcolor_rgb2yuv422_Loop : public cv::ParallelLoopBody
+{
+public:
+    // dstimg is yuvimg 
+    Cvtcolor_rgb2yuv422_Loop(cv::Mat &srcimg, cv::Mat &dstimg):
+    ParallelLoopBody(), src_img(srcimg), dst_img(dstimg)
+    {
+    }
+    
+    virtual void operator()(const cv::Range& range) const CV_OVERRIDE
+    {
+        //printf("%d   %d\n",range.start, range.end);
+        for(int row = range.start; row < range.end; row++)
+        {   
+            for(int col = 0; col < src_img.cols; col+=2)
+            {
+                cv::Vec3b p0_in = src_img.at<cv::Vec3b>(row, col);
+                cv::Vec3b p1_in = src_img.at<cv::Vec3b>(row, col+1);
+                cv::Vec2b p0_out, p1_out;
+                p0_out.val[0] = p0_in.val[0];
+                p0_out.val[1] = p0_in.val[1];
+                p1_out.val[0] = p1_in.val[0];
+                p1_out.val[1] = p0_in.val[2];
+                dst_img.at<cv::Vec2b>(row, col) = p0_out;
+                dst_img.at<cv::Vec2b>(row, col+1) = p1_out;
+            }
+            //printf("%d ", row);
+        }
+        
+    }
+    Cvtcolor_rgb2yuv422_Loop& operator=(const Cvtcolor_rgb2yuv422_Loop &) {
+        return *this;
+    };
+private:
+    cv::Mat &src_img;
+    cv::Mat &dst_img;
+};
 void cvtcolor_rgb2yuv422(cv::Mat& rgb, cv::Mat& yuv) {
 	cv::Mat yuv444(rgb.rows, rgb.cols, CV_8UC3);
 	cv::cvtColor(rgb, yuv444, CV_BGR2YUV);
     // chroma subsampling: yuv444 -> yuv422;
-    for (int row = 0; row < yuv444.rows; row++) {
-        for (int col = 0; col < yuv444.cols; col+=2) {
-        	cv::Vec3b p0_in = yuv444.at<cv::Vec3b>(row, col);
-        	cv::Vec3b p1_in = yuv444.at<cv::Vec3b>(row, col+1);
-        	cv::Vec2b p0_out, p1_out;
-            p0_out.val[0] = p0_in.val[0];
-            p0_out.val[1] = p0_in.val[1];
-            p1_out.val[0] = p1_in.val[0];
-            p1_out.val[1] = p0_in.val[2];
-            yuv.at<cv::Vec2b>(row, col) = p0_out;
-            yuv.at<cv::Vec2b>(row, col+1) = p1_out;
-        }
-    }
+
+    cv::parallel_for_(cv::Range(0, yuv444.rows),
+                    Cvtcolor_rgb2yuv422_Loop(yuv444, yuv));
+
+    // for (int row = 0; row < yuv444.rows; row++) {
+    //     for (int col = 0; col < yuv444.cols; col+=2) {
+    //     	cv::Vec3b p0_in = yuv444.at<cv::Vec3b>(row, col);
+    //     	cv::Vec3b p1_in = yuv444.at<cv::Vec3b>(row, col+1);
+    //     	cv::Vec2b p0_out, p1_out;
+    //         p0_out.val[0] = p0_in.val[0];
+    //         p0_out.val[1] = p0_in.val[1];
+    //         p1_out.val[0] = p1_in.val[0];
+    //         p1_out.val[1] = p0_in.val[2];
+    //         yuv.at<cv::Vec2b>(row, col) = p0_out;
+    //         yuv.at<cv::Vec2b>(row, col+1) = p1_out;
+    //     }
+    // }
+
+
 }
 int rgb2yuv422(cv::Mat& img, struct image_param *yuv422) {
 

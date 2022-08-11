@@ -2,7 +2,7 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 17:19:30
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-10 09:12:27
+ * @LastEditTime: 2022-08-11 10:18:18
  * @Description: 
  */
 #ifndef __RGA_USING_INTERFACE_H__
@@ -24,6 +24,9 @@
 #include "RgaUtils.h"
 #include "im2d.hpp"
 #include "im2d.h"
+
+#include "opencv2/imgcodecs.hpp"
+#include "opencv2/core.hpp"
 #include "opencv2/opencv.hpp"
 #include "opencv2/imgproc.hpp"
 
