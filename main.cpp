@@ -2,7 +2,7 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 15:37:35
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-11 09:09:40
+ * @LastEditTime: 2022-08-11 17:26:01
  * @Description: 
  */
 #include <stdio.h>
@@ -55,20 +55,21 @@ int main(int argc, char const *argv[])
     }
     if(mode == 1) {
         strcpy(file, file_name);
-        if(output_img_param.width > 4096 || output_img_param.heigth > 4096) {
+        Mat input_img = imread(file);
+        input_img_param.width = input_img.cols;
+        input_img_param.heigth = input_img.rows;
+        int fmt = input_img.channels();
+        std::cout<<"image width:\t"<<input_img.cols<<"\theigth:\t"<<input_img.rows<<"\tformat:"<<input_img.channels()<<std::endl;
+        if(fmt == 3)
+            input_img_param.fmt = RK_FORMAT_RGB_888;
+        else if(fmt == 4)
+            input_img_param.fmt = RK_FORMAT_RGBA_8888;
+        if(output_img_param.width > 4096 || output_img_param.heigth > 4096 ||
+            input_img_param.width > 8192 || input_img_param.heigth >8192) {
             /*todo 是否需要读取透明度信息，传递参数，默认只读取RGB信息*/
             struct timeval start, end;
             long usec1;
-            Mat input_img = imread(file);
-            input_img_param.width = input_img.cols;
-            input_img_param.heigth = input_img.rows;
-            int fmt = input_img.channels();
-            std::cout<<"image width:\t"<<input_img.cols<<"\theigth:\t"<<input_img.rows<<"\tformat:"<<input_img.channels()<<std::endl;
-            if(fmt == 3)
-                input_img_param.fmt = RK_FORMAT_RGB_888;
-            else if(fmt == 4)
-                input_img_param.fmt = RK_FORMAT_RGBA_8888;
-
+            
             Size outsize = Size(output_img_param.width, output_img_param.heigth);
             Mat output_img;
 
@@ -77,7 +78,7 @@ int main(int argc, char const *argv[])
             gettimeofday(&end, NULL);
             usec1 = 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
             printf("resizing .... cost time %ld us\n", usec1);
-            
+            input_img.release();
             int buflen = 0;
             if(pix_fmt == 1)
                 buflen = output_img.cols * output_img.rows * 1.5;
@@ -97,6 +98,7 @@ int main(int argc, char const *argv[])
             } else {
                 std::cout << "pix_fmt faild" << std::endl;
             }
+            output_img.release();
             gettimeofday(&end, NULL);
             usec1 = 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
             printf("cvtcolor %d  .... cost time %ld us\n", pix_fmt, usec1);
@@ -105,15 +107,18 @@ int main(int argc, char const *argv[])
             fwrite(input_img_param.img_data, buflen * sizeof(unsigned char), 1, pfile);
             fclose(pfile); 
             delete input_img_param.img_data;
-
+            yuvimg.release();
         } else {
-            read_image_from_file(file, &input_img_param);
+            /* RGA 输入也要做判断*/
+            //read_image_from_file(file, &input_img_param);
+            input_img_param.img_data = (unsigned char*)malloc(fmt * input_img_param.width * input_img_param.heigth);
+            memcpy(input_img_param.img_data, input_img.data, (fmt * input_img_param.width * input_img_param.heigth));
             if(pix_fmt == 1)
                 output_img_param.fmt = RK_FORMAT_UYVY_420;
             else if(pix_fmt == 2)
-                output_img_param.fmt = RK_FORMAT_YUYV_422;
+                output_img_param.fmt = RK_FORMAT_YVYU_422;
             else if(pix_fmt == 3)
-                output_img_param.fmt = RK_FORMAT_YUYV_422;
+                output_img_param.fmt = RK_FORMAT_YVYU_422;
             /* RGA不支持输出 YUV444 图像格式  所以 pix_fmt为3时 输出  YUV422格式图像*/
             // output_img_param.width = 3840;
             // output_img_param.heigth = 2160;
