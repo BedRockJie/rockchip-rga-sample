@@ -2,7 +2,7 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 17:31:06
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-11 16:34:37
+ * @LastEditTime: 2022-08-12 11:30:42
  * @Description: 
  */
 #include "rga_using_interface.h"
@@ -304,13 +304,43 @@ private:
     cv::Mat &src_img;
     cv::Mat &dst_img;
 };
-void cvtcolor_rgb2yuv422(cv::Mat& rgb, cv::Mat& yuv) {
+void cvtcolor_rgb2yuv422(cv::Mat& rgb, cv::Mat& yuv422) {
 	cv::Mat yuv444(rgb.rows, rgb.cols, CV_8UC3);
 	cv::cvtColor(rgb, yuv444, CV_BGR2YUV);
     // chroma subsampling: yuv444 -> yuv422;
 
-    cv::parallel_for_(cv::Range(0, yuv444.rows),
-                    Cvtcolor_rgb2yuv422_Loop(yuv444, yuv));
+    
+    cv::parallel_for_(cv::Range(0, yuv444.rows), [&](const cv::Range& range){
+    for (int row = range.start; row < range.end; row++)
+    {
+        uchar* p_in  = yuv444.ptr(row, 0);
+        uchar* p_out = yuv422.ptr(row, 0);
+
+        for (int col = 0; col < yuv444.cols / 2; col++ )
+        {
+#if 1
+            p_out[0] = p_in[0];
+            p_out[1] = p_in[1];
+            p_out[2] = p_in[3];
+            p_out[3] = p_in[2];
+
+            p_in  += 6; // Y1,U1,V1,Y2,U2,V2
+            p_out += 4; // Y1,U1,Y2,V1
+#else
+            p_out[0] =  p_in[0];
+            p_out[1] = (p_in[1] >> 1) + ( p_in[4] >> 1);
+            p_out[2] =  p_in[3];
+            p_out[3] = (p_in[2] >> 1) + ( p_in[5] >> 1);
+
+            p_in  += 6; // Y1,U1,V1,Y2,U2,V2
+            p_out += 4; // Y1,(U1+U2)/2,Y2,(V1+V2)/2
+#endif
+        }
+    }
+    });
+
+    // cv::parallel_for_(cv::Range(0, yuv444.rows),
+    //                 Cvtcolor_rgb2yuv422_Loop(yuv444, yuv));
 
     // for (int row = 0; row < yuv444.rows; row++) {
     //     for (int col = 0; col < yuv444.cols; col+=2) {
