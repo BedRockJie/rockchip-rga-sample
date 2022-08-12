@@ -2,13 +2,14 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 15:37:35
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-11 18:11:22
+ * @LastEditTime: 2022-08-12 16:43:30
  * @Description: 
  */
 #include <stdio.h>
 
 #include "argparse.h"
 #include "rga_using_interface.h"
+#include "image_resize.h"
 
 using namespace cv;
 
@@ -21,11 +22,13 @@ int main(int argc, char const *argv[])
 {
     int mode, pix_fmt;;
     const char *file_name;
+    const char *out_name;
     char file[128] = {0};
+    char file2[128] = {0};
     struct image_param input_img_param;
     struct image_param output_img_param;
     im_rect 		src_rect;
-
+    unsigned char *dst_img_test;
     struct argparse_option options[] = {
         OPT_HELP(),
         OPT_GROUP("basic options:"),
@@ -39,6 +42,8 @@ int main(int argc, char const *argv[])
                     "yuv pix size eg: 1(yuv420) 2(yuv422) 3(yuv444)", NULL, 0, 0),
         OPT_STRING('i', "file_name", &(file_name),
                    "file_name.png or xxxxx.jpg", NULL, 0, 0),
+        OPT_STRING('o', "outfile_name", &(out_name),
+                    "out_name.bin or xxxxx.yuv", NULL, 0, 0),
         OPT_END(),
     };
     struct argparse argparse;
@@ -54,81 +59,87 @@ int main(int argc, char const *argv[])
         goto FAILD_OUT;
     }
     if(mode == 1) {
-        struct timeval start, end;
-        long usec1;
-        gettimeofday(&start, NULL);
         strcpy(file, file_name);
-        Mat input_img = imread(file);
-        input_img_param.width = input_img.cols;
-        input_img_param.heigth = input_img.rows;
-        int fmt = input_img.channels();
-        std::cout<<"image width:\t"<<input_img.cols<<"\theigth:\t"<<input_img.rows<<"\tformat:"<<input_img.channels()<<std::endl;
-        std::cout<<input_img.cols<<"x"<<input_img.rows<<"\tformat:"<<input_img.channels()<<std::endl;
-        if(fmt == 3)
-            input_img_param.fmt = RK_FORMAT_RGB_888;
-        else if(fmt == 4)
-            input_img_param.fmt = RK_FORMAT_RGBA_8888;
-        if(output_img_param.width > 4096 || output_img_param.heigth > 4096 ||
-            input_img_param.width > 8192 || input_img_param.heigth >8192) {
-            /*todo 是否需要读取透明度信息，传递参数，默认只读取RGB信息*/
+        strcpy(file2, out_name);
+        image_resize(file, output_img_param.width, output_img_param.heigth, file2, dst_img_test);
+        free(dst_img_test);
+        // struct timeval start, end;
+        // long usec1;
+        // gettimeofday(&start, NULL);
+        // strcpy(file, file_name);
+        // strcpy(file2, out_name);
+        // Mat input_img = imread(file);
+        // input_img_param.width = input_img.cols;
+        // input_img_param.heigth = input_img.rows;
+        // int fmt = input_img.channels();
+        // std::cout<<"image width:\t"<<input_img.cols<<"\theigth:\t"<<input_img.rows<<"\tformat:"<<input_img.channels()<<std::endl;
+        // std::cout<<input_img.cols<<"x"<<input_img.rows<<"\tformat:"<<input_img.channels()<<std::endl;
+        // if(fmt == 3)
+        //     input_img_param.fmt = RK_FORMAT_RGB_888;
+        // else if(fmt == 4)
+        //     input_img_param.fmt = RK_FORMAT_RGBA_8888;
+        // if(output_img_param.width > 4096 || output_img_param.heigth > 4096 ||
+        //     input_img_param.width > 8192 || input_img_param.heigth >8192) {
+        //     /*todo 是否需要读取透明度信息，传递参数，默认只读取RGB信息*/
             
-            Size outsize = Size(output_img_param.width, output_img_param.heigth);
-            Mat output_img;
+        //     Size outsize = Size(output_img_param.width, output_img_param.heigth);
+        //     Mat output_img;
 
-            resize(input_img, output_img, outsize, 0, 0, INTER_AREA);
+        //     resize(input_img, output_img, outsize, 0, 0, INTER_AREA);
            
-            input_img.release();
-            int buflen = 0;
-            if(pix_fmt == 1)
-                buflen = output_img.cols * output_img.rows * 1.5;
-            else
-                buflen = output_img.cols * output_img.rows * pix_fmt;
-            input_img_param.img_data = new unsigned char[buflen];
-            Mat yuvimg(output_img.rows, output_img.cols, CV_8UC2);
-            printf("resize done\n");
+        //     input_img.release();
+        //     int buflen = 0;
+        //     if(pix_fmt == 1)
+        //         buflen = output_img.cols * output_img.rows * 1.5;
+        //     else
+        //         buflen = output_img.cols * output_img.rows * pix_fmt;
+        //     output_img_param.img_data = new unsigned char[buflen];
+        //     Mat yuvimg(output_img.rows, output_img.cols, CV_8UC2);
+        //     printf("resize done\n");
             
-            if(pix_fmt == 1) {
-                cvtColor(output_img, yuvimg, COLOR_BGR2YUV_IYUV);
-            } else if(pix_fmt == 3) {
-                cvtColor(output_img, yuvimg, COLOR_BGR2YUV);
-            } else if(pix_fmt == 2){
-                cvtcolor_rgb2yuv422(output_img, yuvimg);
-                //rgb2yuv422(output_img, &input_img_param);
-            } else {
-                std::cout << "pix_fmt faild" << std::endl;
-            }
-            output_img.release();
+        //     if(pix_fmt == 1) {
+        //         cvtColor(output_img, yuvimg, COLOR_BGR2YUV_IYUV);
+        //     } else if(pix_fmt == 3) {
+        //         cvtColor(output_img, yuvimg, COLOR_BGR2YUV);
+        //     } else if(pix_fmt == 2){
+        //         cvtcolor_rgb2yuv422(output_img, yuvimg);
+        //         //rgb2yuv422(output_img, &input_img_param);
+        //     } else {
+        //         std::cout << "pix_fmt faild" << std::endl;
+        //     }
+        //     output_img.release();
             
-            printf("cvtcolor %d  .... cost time %ld us\n", pix_fmt, usec1);
-            FILE* pfile=fopen("img.yuv", "wb");
-            memcpy(input_img_param.img_data, yuvimg.data, buflen * sizeof(unsigned char));
-            fwrite(input_img_param.img_data, buflen * sizeof(unsigned char), 1, pfile);
-            fclose(pfile); 
-            delete input_img_param.img_data;
-            yuvimg.release();
-        } else {
-            /* RGA 输入也要做判断*/
-            //read_image_from_file(file, &input_img_param);
-            input_img_param.img_data = (unsigned char*)malloc(fmt * input_img_param.width * input_img_param.heigth);
-            memcpy(input_img_param.img_data, input_img.data, (fmt * input_img_param.width * input_img_param.heigth));
-            if(pix_fmt == 1)
-                output_img_param.fmt = RK_FORMAT_UYVY_420;
-            else if(pix_fmt == 2)
-                output_img_param.fmt = RK_FORMAT_YVYU_422;
-            else if(pix_fmt == 3)
-                output_img_param.fmt = RK_FORMAT_YVYU_422;
-            /* RGA不支持输出 YUV444 图像格式  所以 pix_fmt为3时 输出  YUV422格式图像*/
-            // output_img_param.width = 3840;
-            // output_img_param.heigth = 2160;
-            rga_resize_test(&input_img_param, &output_img_param);
-            release_image_file_buf(&input_img_param);
-            release_image_file_buf(&output_img_param);
-        }
-        gettimeofday(&end, NULL);
-        usec1 = 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
-        printf("All running is ok!!! .... cost time %ld us\n", usec1);
+        //     printf("cvtcolor %d  .... cost time %ld us\n", pix_fmt, usec1);
+        //     FILE* pfile=fopen("img.yuv", "wb");
+        //     memcpy(output_img_param.img_data, yuvimg.data, buflen * sizeof(unsigned char));
+        //     fwrite(output_img_param.img_data, buflen * sizeof(unsigned char), 1, pfile);
+        //     fclose(pfile); 
+        //     delete output_img_param.img_data;
+        //     yuvimg.release();
+        // } else {
+        //     /* RGA 输入也要做判断*/
+        //     //read_image_from_file(file, &input_img_param);
+        //     input_img_param.img_data = (unsigned char*)malloc(fmt * input_img_param.width * input_img_param.heigth);
+        //     memcpy(input_img_param.img_data, input_img.data, (fmt * input_img_param.width * input_img_param.heigth));
+        //     if(pix_fmt == 1)
+        //         output_img_param.fmt = RK_FORMAT_UYVY_420;
+        //     else if(pix_fmt == 2)
+        //         output_img_param.fmt = RK_FORMAT_YVYU_422;
+        //     else if(pix_fmt == 3)
+        //         output_img_param.fmt = RK_FORMAT_YVYU_422;
+        //     /* RGA不支持输出 YUV444 图像格式  所以 pix_fmt为3时 输出  YUV422格式图像*/
+        //     // output_img_param.width = 3840;
+        //     // output_img_param.heigth = 2160;
+        //     rga_resize_test(&input_img_param, &output_img_param, file2);
+        //     release_image_file_buf(&input_img_param);
+        //     release_image_file_buf(&output_img_param);
+        // }
+        // gettimeofday(&end, NULL);
+        // usec1 = 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+        // printf("All running is ok!!! .... cost time %ld us\n", usec1);
     } 
     else if(mode == 2) {
+        strcpy(file2, out_name);
         memset(&src_rect, 0, sizeof(src_rect));
         strcpy(file, file_name);
         read_image_from_file(file, &input_img_param);
@@ -137,7 +148,7 @@ int main(int argc, char const *argv[])
         src_rect.height = 100;
         src_rect.x = 0;
         src_rect.y = 0;
-        rga_crop_test(&input_img_param, &output_img_param, src_rect);
+        rga_crop_test(&input_img_param, &output_img_param, src_rect, file2);
         release_image_file_buf(&input_img_param);
         release_image_file_buf(&output_img_param);
     }

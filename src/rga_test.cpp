@@ -2,7 +2,7 @@
  * @Author: Bedrock
  * @Date: 2022-08-05 17:31:06
  * @LastEditors: Bedrock
- * @LastEditTime: 2022-08-12 11:30:42
+ * @LastEditTime: 2022-08-12 16:42:17
  * @Description: 
  */
 #include "rga_using_interface.h"
@@ -11,7 +11,7 @@
 #include "stb_image.h"
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize.h"
-
+#include "image_resize.h"
 
 #define OUTPUT_FILE "/root/out1.bin"
 struct timeval start, end;
@@ -125,7 +125,7 @@ int read_image_from_file(char *file_patch, struct image_param *p_src)
  * @return {*}
  * @use: 
  */
-int rga_resize_test(struct image_param *p_src, struct image_param *p_dst)
+int rga_resize_test(struct image_param *p_src, struct image_param *p_dst, char *dst_file_name)
 {
     int ret, pix_fmt;
     im_rect 		src_rect;
@@ -201,7 +201,7 @@ int rga_resize_test(struct image_param *p_src, struct image_param *p_dst)
     // }
 RESIZE_END:
     if (dst_buf != NULL) {
-        output_bufs_data_to_file(OUTPUT_FILE ,dst_buf, dst.format, dst.wstride, dst.hstride);
+        output_bufs_data_to_file(dst_file_name ,dst_buf, dst.format, dst.wstride, dst.hstride);
         printf("%d %d %d\n", dst.format, dst.wstride, dst.hstride);
         p_dst->img_data = dst_buf;
         //free(dst_buf);
@@ -219,7 +219,7 @@ RESIZE_END:
  * @return {*}
  * @use: 
  */
-int rga_crop_test(struct image_param *p_src, struct image_param *p_dst, im_rect src_rect)
+int rga_crop_test(struct image_param *p_src, struct image_param *p_dst, im_rect src_rect, char *file_name)
 {
     int ret;
     im_rect 		dst_rect;
@@ -260,7 +260,7 @@ int rga_crop_test(struct image_param *p_src, struct image_param *p_dst, im_rect 
     usec1 = 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
     printf("cropping .... cost time %ld us, %s\n", usec1, imStrError(STATUS));
     if (dst_buf != NULL) {
-        output_bufs_data_to_file(OUTPUT_FILE ,dst_buf, dst.format, dst.wstride, dst.hstride);
+        output_bufs_data_to_file(file_name ,dst_buf, dst.format, dst.wstride, dst.hstride);
         p_dst->img_data = dst_buf;
         //free(dst_buf);
         dst_buf = NULL;
@@ -359,9 +359,6 @@ void cvtcolor_rgb2yuv422(cv::Mat& rgb, cv::Mat& yuv422) {
 
 }
 int rgb2yuv422(cv::Mat& img, struct image_param *yuv422) {
-
-
-
 	if (!img.data) {
 		std::cout << "Image reading unsuccessful! Exiting.." << std::endl;
 		return -1;
@@ -424,4 +421,99 @@ int rgb2yuv422(cv::Mat& img, struct image_param *yuv422) {
 	}
 */
 	return 0;
+}
+
+
+
+using namespace cv;
+int image_resize(char *src_file_name, int dst_width, int dst_heigth, char *dst_file_name, unsigned char *dst_data)
+{
+    struct image_param input_img_param;
+    struct image_param output_img_param;
+    im_rect 		src_rect;
+    int pix_fmt = 2;
+    char file[128] = {0};
+
+    strcpy(file, src_file_name);
+    Mat input_img = imread(file);
+    input_img_param.width = input_img.cols;
+    input_img_param.heigth = input_img.rows;
+    int fmt = input_img.channels();
+    std::cout<<"image width:\t"<<input_img.cols<<"\theigth:\t"<<input_img.rows<<"\tformat:"<<input_img.channels()<<std::endl;
+    std::cout<<input_img.cols<<"x"<<input_img.rows<<"\tformat:"<<input_img.channels()<<std::endl;
+    if(fmt == 3)
+        input_img_param.fmt = RK_FORMAT_RGB_888;
+    else if(fmt == 4)
+        input_img_param.fmt = RK_FORMAT_RGBA_8888;
+
+
+    output_img_param.width = dst_width;
+    output_img_param.heigth = dst_heigth;
+    struct timeval start, end;
+    long usec1;
+    gettimeofday(&start, NULL);
+    
+    if(output_img_param.width > 4096 || output_img_param.heigth > 4096 ||
+        input_img_param.width > 8192 || input_img_param.heigth >8192) {
+        /*todo 是否需要读取透明度信息，传递参数，默认只读取RGB信息*/
+        Size outsize = Size(output_img_param.width, output_img_param.heigth);
+        Mat output_img;
+
+        resize(input_img, output_img, outsize, 0, 0, INTER_AREA);
+        
+        input_img.release();
+        int buflen = 0;
+        if(pix_fmt == 1)
+            buflen = output_img.cols * output_img.rows * 1.5;
+        else
+            buflen = output_img.cols * output_img.rows * pix_fmt;
+        output_img_param.img_data = new unsigned char[buflen];
+        Mat yuvimg(output_img.rows, output_img.cols, CV_8UC2);
+        printf("resize done\n");
+        
+        if(pix_fmt == 1) {
+            cvtColor(output_img, yuvimg, COLOR_BGR2YUV_IYUV);
+        } else if(pix_fmt == 3) {
+            cvtColor(output_img, yuvimg, COLOR_BGR2YUV);
+        } else if(pix_fmt == 2){
+            cvtcolor_rgb2yuv422(output_img, yuvimg);
+            //rgb2yuv422(output_img, &input_img_param);
+        } else {
+            std::cout << "pix_fmt faild" << std::endl;
+        }
+        output_img.release();
+        
+
+        FILE* pfile=fopen(dst_file_name, "wb");
+        memcpy(output_img_param.img_data, yuvimg.data, buflen * sizeof(unsigned char));
+        fwrite(output_img_param.img_data, buflen * sizeof(unsigned char), 1, pfile);
+        fclose(pfile); 
+        dst_data = output_img_param.img_data;
+        //delete output_img_param.img_data;
+        yuvimg.release();
+        
+    } else {
+        /* RGA 输入也要做判断*/
+        //read_image_from_file(file, &input_img_param);
+        input_img_param.img_data = (unsigned char*)malloc(fmt * input_img_param.width * input_img_param.heigth);
+        memcpy(input_img_param.img_data, input_img.data, (fmt * input_img_param.width * input_img_param.heigth));
+        if(pix_fmt == 1)
+            output_img_param.fmt = RK_FORMAT_UYVY_420;
+        else if(pix_fmt == 2)
+            output_img_param.fmt = RK_FORMAT_YVYU_422;
+        else if(pix_fmt == 3)
+            output_img_param.fmt = RK_FORMAT_YVYU_422;
+        /* RGA不支持输出 YUV444 图像格式  所以 pix_fmt为3时 输出  YUV422格式图像*/
+        // output_img_param.width = 3840;
+        // output_img_param.heigth = 2160;
+        rga_resize_test(&input_img_param, &output_img_param, dst_file_name);
+        release_image_file_buf(&input_img_param);
+        dst_data = output_img_param.img_data;
+        //release_image_file_buf(&output_img_param);
+    }
+    gettimeofday(&end, NULL);
+    usec1 = 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+    printf("All running is ok!!! .... cost time %ld us\n", usec1);
+
+    return 0;
 }
